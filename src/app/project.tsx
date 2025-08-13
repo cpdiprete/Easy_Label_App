@@ -58,16 +58,44 @@ const NoDropdownAnswers = ({prompt_index, question, answers}) => {
 }
 
 const DrodownAnswers = ({prompt_index, question, answers}) => {
+    const [selectedAnswer, setSelectedAnswer] = useState([null, null]);
+    const [selectedRow, setSelectedRow] = useState([null, null]);
+    const [openDropdown, setOpenDropdown] = useState(false)
     return (
-        <View>
-            <Text style={styles.questionText}>{question}</Text>
+        <View style = {(selectedRow[0] === prompt_index) ? styles.NonDropdownPromptAnswered : styles.NonDropdownPrompt}>
+            {/* <Text style={styles.questionText}>{question}</Text> */}
             <TouchableOpacity 
                 style={styles.answerChoice}
                 onPress={() => {
-                    // open up the dropdown menu
+                    setOpenDropdown(true)
                 }}
             >
-                
+                {openDropdown ? (
+                    <>
+                        {/* <Text>{selectedAnswer[1]}</Text> */}
+                        <Text>{selectedAnswer?.[1] ?? ""}</Text>
+                        {answers.map((ans, i) => (
+                            <TouchableOpacity
+                                key={`${ans}-${i}`}
+                                style= {
+                                    selectedAnswer[0] === i ? styles.selectedAnswerChoice : styles.answerChoice
+                                }
+                                onPress={() => {
+                                    setSelectedAnswer([i, ans])
+                                    setSelectedRow([prompt_index, ans])
+                                    setOpenDropdown(false)
+                                }}
+                            >
+                                <Text style = {selectedAnswer[0] === i ? styles.selectedAnswerChoiceText : styles.answerChoiceText}>
+                                    {ans}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </>
+                    ) : (
+                        selectedAnswer[1] === null ? <Text>{question}</Text> : <Text>{selectedAnswer[1]}</Text>
+                    )
+                }
             </TouchableOpacity>
         </View>
     )
@@ -80,11 +108,15 @@ const QuestionList = ({questionJSON}) => {
             data={questionJSON}
             keyExtractor={(_, index) => String(index)}
             renderItem={({index, item }) => (
-                <NoDropdownAnswers
+                // <NoDropdownAnswers
+                //     prompt_index={index}
+                //     question = {item.Prompt.Question}
+                //     answers={item.Prompt.Answers}/>
+                <DrodownAnswers
                     prompt_index={index}
                     question = {item.Prompt.Question}
-                    answers={item.Prompt.Answers}>
-                </NoDropdownAnswers>
+                    answers={item.Prompt.Answers}
+                />
             )}
         >
         </FlatList>
