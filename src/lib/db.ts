@@ -46,7 +46,7 @@ export function initDb() {
             id TEXT PRIMARY KEY,
             projectId TEXT NOT NULL,
             uri TEXT NOT NULL,         -- file://… (local) or http(s)://… later
-            updatedAt INTEGER NOT NULL,
+            updatedAt INTEGER NOT NULL
         );
     `);
 }

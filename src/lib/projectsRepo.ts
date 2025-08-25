@@ -71,12 +71,14 @@ export function deleteProject(id: string): boolean {
 
 
 // READ (list)
-export function listProjects(): Array<Pick<Project, "id" | "title" | "organization" | "admin" | "description"> & { cover?: string }> {
+export function listProjects(): Array<Pick<Project, "id" | "title" | "organization" | "admin" | "description"> & { cover?: string }> { // I need some indicator of how many have been labeled
+
+
     const rows = db.getAllSync<any>(`SELECT id,title,organization,admin,description FROM projects ORDER BY updatedAt DESC`);
     // attach a cover image (first image if exists)
     return rows.map((r) => {
         const img = db.getFirstSync<any>(`SELECT uri FROM project_images WHERE projectId=? ORDER BY rowid ASC LIMIT 1`, [r.id]);
-        return { ...r, cover: img?.uri };
+        return { ...r, cover: img?.uri }; // currently the cover image is pulled from the first image
     });
 }
 
@@ -96,8 +98,15 @@ export function getProject(id: string): Project | null {
         return { id: pr.id, question: pr.question, options: opts, orderIndex: pr.orderIndex };
     });
 
+
+    // const imageRows = db.getAllSync<any>(
+    //     `SELECT * FROM project_images WHERE projectId=?`, [id]
+    // )
+    // console.log("Images from getProject in projectsRepo.ts: ", imgs)
+
     const imageRows = db.getAllSync<any>(`SELECT uri FROM project_images WHERE projectId=? ORDER BY rowid ASC`, [id]);
     const images = imageRows.map((r: any) => r.uri);
+    // console.log("Images from getProject in projectsRepo.ts: ", images)
 
     return {
         id: p.id,
@@ -157,10 +166,10 @@ export function deleteImage(projectId: string, uri: string) {
     db.runSync(`DELETE FROM project_images WHERE projectId=? AND uri=?`, [projectId, uri]);
 }
 
-export function labelImage(projectId: string, imageId:string, labels: string[]) {
-    labels.forEach((label, i) => {
-        const query_update = `UPDATE project_images SET labels=? WHERE imageId=?`;
-        const params = [labels[i], imageId];
-        db.runSync(query_update, params) // This is all super fucked and wont work if I try to label like this lol, need to revise
-    })
-}
+// export function labelImage(projectId: string, imageId:string, labels: string[]) {
+//     labels.forEach((label, i) => {
+//         const query_update = `UPDATE project_images SET labels=? WHERE imageId=?`;
+//         const params = [labels[i], imageId];
+//         db.runSync(query_update, params) // This is all super fucked and wont work if I try to label like this, need to revise
+//     })
+// }

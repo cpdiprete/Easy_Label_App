@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Image } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { getProject } from "../../../lib/projectsRepo";
@@ -7,15 +7,15 @@ import { getProject } from "../../../lib/projectsRepo";
 type LegacyPrompt = { prompt: { question: string; answers: string[] } };
 
 const NoDropdownAnswers = ({
-prompt_index,
-question,
-answers,
-onAnswer,
+  prompt_index,
+  question,
+  answers,
+  onAnswer,
 }: {
-prompt_index: number;
-question: string;
-answers: string[];
-onAnswer: (index: number, answer: string) => void;
+  prompt_index: number;
+  question: string;
+  answers: string[];
+  onAnswer: (index: number, answer: string) => void;
 }) => {
 const [selectedAnswer, setSelectedAnswer] = useState<[number | null, string | null]>([null, null]);
 const [selectedRow, setSelectedRow] = useState<[number | null, string | null]>([null, null]);
@@ -44,181 +44,189 @@ return (
 );
 };
 
-const DrodownAnswers = ({
-prompt_index,
-question,
-answers,
-onAnswer,
-}: {
-prompt_index: number;
-question: string;
-answers: string[];
-onAnswer: (index: number, answer: string) => void;
+const DrodownAnswers = ({prompt_index, question, answers, onAnswer}: {
+  prompt_index: number;
+  question: string;
+  answers: string[];
+  onAnswer: (index: number, answer: string) => void;
 }) => {
-const [selectedAnswer, setSelectedAnswer] = useState<[number | null, string | null]>([null, null]);
-const [selectedRow, setSelectedRow] = useState<[number | null, string | null]>([null, null]);
-const [openDropdown, setOpenDropdown] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState<[number | null, string | null]>([null, null]);
+  const [selectedRow, setSelectedRow] = useState<[number | null, string | null]>([null, null]);
+  const [openDropdown, setOpenDropdown] = useState(false);
 
-return (
-    <TouchableOpacity
-    style={selectedRow[0] === prompt_index ? styles.dropdownPromptAnswered : styles.dropDownPrompt}
-    onPress={() => setOpenDropdown(true)}
-    >
-    <Text>{question}</Text>
-    {openDropdown ? (
-        <>
-        {answers.map((ans, i) => (
-            <TouchableOpacity
-            key={`${ans}-${i}`}
-            style={selectedAnswer[0] === i ? styles.selectedAnswerChoiceBox : styles.answerChoiceBox}
-            onPress={() => {
-                setSelectedAnswer([i, ans]);
-                setSelectedRow([prompt_index, ans]);
-                setOpenDropdown(false);
-                onAnswer(prompt_index, ans);
-            }}
-            >
-            <Text style={selectedAnswer[0] === i ? styles.selectedAnswerChoiceText : styles.answerChoiceText}>
-                {ans}
-            </Text>
-            </TouchableOpacity>
-        ))}
-        </>
-    ) : selectedAnswer[1] === null ? null : (
-        <View style={styles.selectedAnswerChoiceBox}>
-        <Text style={{ color: "white", textDecorationLine: "underline" }}>{selectedAnswer[1]}</Text>
-        </View>
-    )}
-    </TouchableOpacity>
-);
+  return (
+      <TouchableOpacity
+      style={selectedRow[0] === prompt_index ? styles.dropdownPromptAnswered : styles.dropDownPrompt}
+      onPress={() => setOpenDropdown(true)}
+      >
+      <Text>{question}</Text>
+      {openDropdown ? (
+          <>
+          {answers.map((ans, i) => (
+              <TouchableOpacity
+              key={`${ans}-${i}`}
+              style={selectedAnswer[0] === i ? styles.selectedAnswerChoiceBox : styles.answerChoiceBox}
+              onPress={() => {
+                  setSelectedAnswer([i, ans]);
+                  setSelectedRow([prompt_index, ans]);
+                  setOpenDropdown(false);
+                  onAnswer(prompt_index, ans);
+              }}
+              >
+              <Text style={selectedAnswer[0] === i ? styles.selectedAnswerChoiceText : styles.answerChoiceText}>
+                  {ans}
+              </Text>
+              </TouchableOpacity>
+          ))}
+          </>
+      ) : selectedAnswer[1] === null ? null : (
+          <View style={styles.selectedAnswerChoiceBox}>
+          <Text style={{ color: "white", textDecorationLine: "underline" }}>{selectedAnswer[1]}</Text>
+          </View>
+      )}
+      </TouchableOpacity>
+  );
 };
 
-const QuestionList = ({
-questionJSON,
-onAnswer,
-}: {
-questionJSON: LegacyPrompt[];
-onAnswer: (index: number, answer: string) => void;
+const QuestionList = ({questionJSON, onAnswer}: {
+  questionJSON: LegacyPrompt[];
+  onAnswer: (index: number, answer: string) => void;
 }) => {
-return (
-    <FlatList
-    style={styles.questionList}
-    data={questionJSON}
-    keyExtractor={(_, index) => String(index)}
-    renderItem={({ index, item }) => (
-        <View>
-        {/* <NoDropdownAnswers
-            prompt_index={index}
-            question={item.prompt.question}
-            answers={item.prompt.answers}
-            onAnswer={onAnswer}
-        /> */}
-        <DrodownAnswers
-            prompt_index={index}
-            question={item.prompt.question}
-            answers={item.prompt.answers}
-            onAnswer={onAnswer}
-        />
-        </View>
-    )}
-    />
-);
+  return (
+      <FlatList
+      style={styles.questionList}
+      data={questionJSON}
+      keyExtractor={(_, index) => String(index)}
+      renderItem={({ index, item }) => (
+          <View>
+          {/* <NoDropdownAnswers
+              prompt_index={index}
+              question={item.prompt.question}
+              answers={item.prompt.answers}
+              onAnswer={onAnswer}
+          /> */}
+          <DrodownAnswers
+              prompt_index={index}
+              question={item.prompt.question}
+              answers={item.prompt.answers}
+              onAnswer={onAnswer}
+          />
+          </View>
+      )}
+      />
+  );
 };
 
 const SubmitButton = ({ enabled, onSubmit }: { enabled: boolean; onSubmit: () => void }) => {
-return (
-    <TouchableOpacity
-    style={[
-        { width: "70%", alignSelf: "center", alignItems: "center", padding: 4, marginTop: 4, borderRadius: 20 },
-        enabled ? { backgroundColor: "orange" } : { backgroundColor: "gray" },
-    ]}
-    disabled={!enabled}
-    onPress={onSubmit}
-    >
-    <Text style={{ color: "white", fontWeight: "600" }}>Submit</Text>
-    </TouchableOpacity>
-);
+  return (
+      <TouchableOpacity
+      style={[
+          { width: "70%", alignSelf: "center", alignItems: "center", padding: 4, marginTop: 4, borderRadius: 20 },
+          enabled ? { backgroundColor: "orange" } : { backgroundColor: "gray" },
+      ]}
+      disabled={!enabled}
+      onPress={onSubmit}
+      >
+      <Text style={{ color: "white", fontWeight: "600" }}>Submit</Text>
+      </TouchableOpacity>
+  );
 };
 
-// ---------- SCREEN ----------
 const ProjectScreen = () => {
-const { id } = useLocalSearchParams<{ id?: string }>();
-const [title, setTitle] = useState<string>("");
-const [admin, setAdmin] = useState<string>("");
-const [legacyPrompts, setLegacyPrompts] = useState<LegacyPrompt[] | null>(null);
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const [title, setTitle] = useState<string>("");
+  const [admin, setAdmin] = useState<string>("");
+  const [legacyPrompts, setLegacyPrompts] = useState<LegacyPrompt[] | null>(null);
+  const [images, setImages] = useState<string[]>([""])
+  const [displayImageIndex, setDisplayImageIndex] = useState<number>(0)
 
-// Parent owns answers: answers[i] is the selected answer or null
-const [answers, setAnswers] = useState<(string | null)[]>([]);
+  // Parent owns answers: answers[i] is the selected answer or null
+  const [answers, setAnswers] = useState<(string | null)[]>([]);
 
-const load = useCallback(() => {
-    if (!id) {
-    return;
-    }
-    const p = getProject(String(id));
-    if (!p) {
-    setLegacyPrompts([]);
-    setAnswers([]);
-    return;
-    }
+  const load = useCallback(() => {
+      if (!id) {
+        return;
+      }
+      const p = getProject(String(id));
+      if (!p) {
+        setLegacyPrompts([]);
+        setAnswers([]);
+        return;
+      }
 
-    const adapted: LegacyPrompt[] = p.prompts.map((pr: any) => ({
-    prompt: {
-        question: pr.question,
-        answers: (pr.options || []).map((o: any) => o.text),
-    },
-    }));
+      const adapted: LegacyPrompt[] = p.prompts.map((pr: any) => ({
+      prompt: {
+          question: pr.question,
+          answers: (pr.options || []).map((o: any) => o.text),
+      },
+      }));
 
-    setTitle(p.title);
-    setAdmin(p.admin);
-    setLegacyPrompts(adapted);
-    setAnswers(new Array(adapted.length).fill(null));
-}, [id]);
+      setTitle(p.title);
+      setAdmin(p.admin);
+      setLegacyPrompts(adapted);
+      setAnswers(new Array(adapted.length).fill(null));
+      setImages(p.images)
+      // console.log("Image stored in labeling screen: ", p.images)
+      // console.log("First image: ", p.images[0])
+  }, [id]);
 
-useFocusEffect(
-    useCallback(() => {
-    load();
-    }, [load])
-);
+  useFocusEffect(
+      useCallback(() => {
+      load();
+      }, [load])
+  );
 
-const onAnswer = useCallback((index: number, answer: string) => {
-    setAnswers(prev => {
-    const next = [...prev];
-    next[index] = answer;
-    return next;
-    });
-}, []);
+  const onAnswer = useCallback((index: number, answer: string) => {
+      setAnswers(prev => {
+      const next = [...prev];
+      next[index] = answer;
+      return next;
+      });
+  }, []);
 
-const allowSubmission =
-    (legacyPrompts?.length ?? 0) > 0 &&
-    answers.length === (legacyPrompts?.length ?? 0) &&
-    answers.every(a => a !== null);
+  const allowSubmission =
+      (legacyPrompts?.length ?? 0) > 0 &&
+      answers.length === (legacyPrompts?.length ?? 0) &&
+      answers.every(a => a !== null);
 
-if (!legacyPrompts) {
-    return (
-    <View style={[styles.projectScreenLayout, { justifyContent: "center" }]}>
-        <Text>Loading…</Text>
-    </View>
-    );
-}
+  if (!legacyPrompts) {
+      return (
+      <View style={[styles.projectScreenLayout, { justifyContent: "center" }]}>
+          <Text>Loading…</Text>
+      </View>
+      );
+  }
 
-return (
-    <View style={styles.projectScreenLayout}>
-    <View style={styles.content}>
-        <Text style={styles.title}>Title: {title}</Text>
-        <Text style={styles.admin}>Admin: {admin}</Text>
-        <QuestionList questionJSON={legacyPrompts} onAnswer={onAnswer} />
-    </View>
+  return (
+      <View style={styles.projectScreenLayout}>
+          <Text style={styles.title}>Title: {title}</Text>
+          <Text style={styles.admin}>Admin: {admin}</Text>
+        <Image source={{uri: images[displayImageIndex]}} style={{ width: "100%", height: "30%", marginBottom: 10, marginTop: 10, borderRadius: 8 }}></Image>
+        <TouchableOpacity
+        onPress={() => {
+          if (images[displayImageIndex + 1]) {
+            setDisplayImageIndex(displayImageIndex + 1)
+            // setAnswers([]) // tried this but it didnt cascade to UI elements, so I'll need to edit it so when I do this it does cascade
+          } else {
+            console.log("end of images array, cant increment")
+          }
+        }}>
+          <Text style={{color:"blue"}}>Next image</Text>
+        </TouchableOpacity>
+      <View style={styles.content}>
+          <QuestionList questionJSON={legacyPrompts} onAnswer={onAnswer} />
+      </View>
 
-    <SubmitButton
-        enabled={allowSubmission}
-        onSubmit={() => {
-        if (!allowSubmission) return;
-        console.log("SUBMISSION", { answers });
-        // TODO: persist answers to your repo/service here
-        }}
-    />
-    </View>
-);
+      <SubmitButton
+          enabled={allowSubmission}
+          onSubmit={() => {
+          if (!allowSubmission) return;
+          console.log("SUBMISSION", { answers });
+          // TODO: persist answers to your repo/service here
+          }}
+      />
+      </View>
+  );
 };
 
 const styles = StyleSheet.create({

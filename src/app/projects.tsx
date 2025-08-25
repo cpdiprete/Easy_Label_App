@@ -196,17 +196,19 @@ import { View, Text, Button, Image, ScrollView, TouchableOpacity } from "react-n
 import { listProjects } from "../lib/projectsRepo";
 import { StyleSheet } from "react-native";
 import { getProject, deleteProject, updateProject, addPrompt, addImage, deleteImage } from "../lib/projectsRepo";
+import { MaterialIcons } from '@react-native-vector-icons/material-icons';
 
+// projects are stored in items and grabbed from listProjects() 
 export default function Projects() {
     const [items, setItems] = useState<any[]>([]);
 
-    const refresh = useCallback(() => setItems(listProjects()), []);
+    const refresh = useCallback(() => setItems(listProjects()), []); 
     useFocusEffect(useCallback(() => { refresh(); }, [refresh])); // called any time this screen comes back into scope
 
     return (
         <ScrollView style={styles.scrollView} 
                 contentContainerStyle={{
-                    flexGrow: 1,          // ensures it takes full height for vertical centering
+                    flexGrow: 1,          // takes full height for vertical centering
                     alignItems: "center"  // horizontal centering
                 }}>
         <Button title="New Project" onPress={() => router.push("/project/new")} />
@@ -218,27 +220,29 @@ export default function Projects() {
                         router.push({ pathname: "/project/[id]/add_details", params: { id: p.id } })}
                     }
                 >
-                <View style={{ padding: 12, backgroundColor: "##D9D9D9", borderRadius: 12, marginTop: 8 }}>
-                    <Text style={{ fontWeight: "bold", fontSize: 16 }}>{p.title}</Text>
-                    <Text>{p.organization}</Text>
-                    {p.cover ? (
-                    <Image source={{ uri: p.cover }} style={{ width: "100%", height: 180, marginTop: 8, borderRadius: 8 }} />
-                    ) : null}
-                    <Text numberOfLines={2} style={{ marginTop: 6 }}>{p.description}</Text>
-                </View>
+                    <View style={{ padding: 12, backgroundColor: "##D9D9D9", borderRadius: 12, marginTop: 8 }}>
+                        <Text style={{ fontWeight: "bold", fontSize: 16 }}>{p.title}</Text>
+                        <Text>{p.organization}</Text>
+                        {p.cover ? (
+                        <Image source={{ uri: p.cover }} style={{ width: "100%", height: 180, marginTop: 8, borderRadius: 8 }} />
+                        ) : null}
+                        <Text numberOfLines={2} style={{ marginTop: 6 }}>{p.description}</Text>
+                    </View>
                 </TouchableOpacity>
+                {/* <View></View> */}
                 <TouchableOpacity 
                     style = {{backgroundColor: "#E86100", borderRadius:50}}
                         onPress={()=> router.push({pathname: "/project/[id]/labeling", params:{id: p.id}})}>
                         <Text style={{color:"#FFFFFF", fontWeight:"semibold", paddingHorizontal:10}}>Continue</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={{backgroundColor: "red"}}
-                onPress={() => {
-                    deleteProject(p.id)
-                    refresh();
-                }}>
+
+                <TouchableOpacity style={{backgroundColor: "red", flexDirection:"row"}}
+                    onPress={() => {
+                        deleteProject(p.id)
+                        refresh();
+                    }}>
+                    <MaterialIcons name="delete" size={20} color="white"/> 
                     <Text>Delete project</Text>
-                    
                 </TouchableOpacity>
             </View>
         ))}
@@ -261,7 +265,8 @@ const styles = StyleSheet.create({
         // padding:12,
         margin:6,
         width:"90%",
-        backgroundColor: "#D9D9D9"
+        backgroundColor: "#D9D9D9",
+        borderRadius: "5%"
     },
     imageBackground: {
         backgroundColor: 'lightpink',
