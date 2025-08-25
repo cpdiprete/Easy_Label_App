@@ -2,6 +2,7 @@
 
 import { Text, View, Button } from "react-native";
 import {Link, useRouter} from "expo-router";
+import { clearDbData, clearDbSchema, initDb } from "../lib/db";
 
 export default function Index() {
   const router = useRouter();
@@ -13,12 +14,27 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text>Edit app/index.tsx to edit this screen.</Text>
+      <Text>Edit src/app/index.tsx to edit this screen.</Text>
       <Button title="Go to projects"
       onPress={() => {
         router.push("/projects")
       }}>
+      </Button>
+      <Button title="Clear database data (keep schema)"
+      onPress={() => {
+        clearDbData();
+      }}>
+      </Button>
 
+      <Button title="Clear database data (remove schema)"
+      onPress={() => {
+        clearDbSchema();
+      }}>
+      </Button>
+      <Button title="init database"
+      onPress={() => {
+        initDb();
+      }}>
       </Button>
     </View>
   );

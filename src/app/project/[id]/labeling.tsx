@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Image } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { getProject } from "../../../lib/projectsRepo";
+import { checkImageAnswers, getProject, storeImageAnswers } from "../../../lib/projectsRepo";
 
 type LegacyPrompt = { prompt: { question: string; answers: string[] } };
 
@@ -44,19 +44,18 @@ return (
 );
 };
 
-const DrodownAnswers = ({prompt_index, question, answers, onAnswer}: {
+const DrodownAnswers = ({prompt_index, question, answers, selected, onAnswer}: {
   prompt_index: number;
   question: string;
   answers: string[];
+  selected: string | null
   onAnswer: (index: number, answer: string) => void;
 }) => {
-  const [selectedAnswer, setSelectedAnswer] = useState<[number | null, string | null]>([null, null]);
-  const [selectedRow, setSelectedRow] = useState<[number | null, string | null]>([null, null]);
   const [openDropdown, setOpenDropdown] = useState(false);
 
   return (
       <TouchableOpacity
-      style={selectedRow[0] === prompt_index ? styles.dropdownPromptAnswered : styles.dropDownPrompt}
+      style={selected ? styles.dropdownPromptAnswered : styles.dropDownPrompt}
       onPress={() => setOpenDropdown(true)}
       >
       <Text>{question}</Text>
@@ -65,37 +64,37 @@ const DrodownAnswers = ({prompt_index, question, answers, onAnswer}: {
           {answers.map((ans, i) => (
               <TouchableOpacity
               key={`${ans}-${i}`}
-              style={selectedAnswer[0] === i ? styles.selectedAnswerChoiceBox : styles.answerChoiceBox}
+              style={selected === ans ? styles.selectedAnswerChoiceBox : styles.answerChoiceBox}
               onPress={() => {
-                  setSelectedAnswer([i, ans]);
-                  setSelectedRow([prompt_index, ans]);
                   setOpenDropdown(false);
                   onAnswer(prompt_index, ans);
               }}
               >
-              <Text style={selectedAnswer[0] === i ? styles.selectedAnswerChoiceText : styles.answerChoiceText}>
+                <Text style={selected === ans ? styles.selectedAnswerChoiceText : styles.answerChoiceText}>
                   {ans}
               </Text>
               </TouchableOpacity>
           ))}
           </>
-      ) : selectedAnswer[1] === null ? null : (
+        ) : !selected ? null : (
           <View style={styles.selectedAnswerChoiceBox}>
-          <Text style={{ color: "white", textDecorationLine: "underline" }}>{selectedAnswer[1]}</Text>
+            <Text style={{ color: "white", textDecorationLine: "underline" }}>{selected}</Text>
           </View>
       )}
       </TouchableOpacity>
   );
 };
 
-const QuestionList = ({questionJSON, onAnswer}: {
+const QuestionList = ({questionJSON, answers, onAnswer}: {
   questionJSON: LegacyPrompt[];
+  answers: (string | null)[];
   onAnswer: (index: number, answer: string) => void;
 }) => {
   return (
       <FlatList
       style={styles.questionList}
       data={questionJSON}
+      extraData={answers}
       keyExtractor={(_, index) => String(index)}
       renderItem={({ index, item }) => (
           <View>
@@ -109,6 +108,7 @@ const QuestionList = ({questionJSON, onAnswer}: {
               prompt_index={index}
               question={item.prompt.question}
               answers={item.prompt.answers}
+              selected={answers[index]}
               onAnswer={onAnswer}
           />
           </View>
@@ -176,6 +176,15 @@ const ProjectScreen = () => {
       }, [load])
   );
 
+  const incrementImageIndex = (legacyPrompts) => {
+    if (images[displayImageIndex + 1]) {
+      setDisplayImageIndex(displayImageIndex + 1)
+      setAnswers(new Array(legacyPrompts.length).fill(null));
+    } else {
+      console.log("end of images array, cant increment to next one")
+    }
+  }
+
   const onAnswer = useCallback((index: number, answer: string) => {
       setAnswers(prev => {
       const next = [...prev];
@@ -204,25 +213,30 @@ const ProjectScreen = () => {
         <Image source={{uri: images[displayImageIndex]}} style={{ width: "100%", height: "30%", marginBottom: 10, marginTop: 10, borderRadius: 8 }}></Image>
         <TouchableOpacity
         onPress={() => {
-          if (images[displayImageIndex + 1]) {
-            setDisplayImageIndex(displayImageIndex + 1)
-            // setAnswers([]) // tried this but it didnt cascade to UI elements, so I'll need to edit it so when I do this it does cascade
-          } else {
-            console.log("end of images array, cant increment")
-          }
+          incrementImageIndex(legacyPrompts)
         }}>
           <Text style={{color:"blue"}}>Next image</Text>
         </TouchableOpacity>
       <View style={styles.content}>
-          <QuestionList questionJSON={legacyPrompts} onAnswer={onAnswer} />
+          <QuestionList questionJSON={legacyPrompts} answers={answers} onAnswer={onAnswer} />
       </View>
 
       <SubmitButton
           enabled={allowSubmission}
           onSubmit={() => {
-          if (!allowSubmission) return;
-          console.log("SUBMISSION", { answers });
-          // TODO: persist answers to your repo/service here
+            if (!allowSubmission) {
+              console.log("Can't submit till all prompts are answered");
+              return
+            }
+            console.log("SUBMISSION", { answers });
+            // storeImageAnswers(answers);
+            // TODO: persist answers to your repo/service here
+            if (id && images[displayImageIndex] && answers) {
+              storeImageAnswers(id, images[displayImageIndex], String(answers))
+              const returnedImageAnswers = checkImageAnswers(id, images[displayImageIndex]);
+              console.log("Image label answers returned to database string", returnedImageAnswers)
+              incrementImageIndex(legacyPrompts)
+            }
           }}
       />
       </View>

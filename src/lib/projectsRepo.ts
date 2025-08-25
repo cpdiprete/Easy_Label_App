@@ -156,20 +156,32 @@ export function addPrompt(projectId: string, question: string, options: string[]
 }
 
 export function addImage(projectId: string, uri: string) {
-    db.runSync(
-        `INSERT INTO project_images (id, projectId, uri, updatedAt) VALUES (?,?,?,?)`,
-        [newId(), projectId, uri, Date.now()]
-    );
+    const query = `INSERT INTO project_images (id, projectId, uri, updatedAt, imageAnswers) VALUES (?,?,?,?,?)`;
+    const oldQuery = `INSERT INTO project_images (id, projectId, uri, updatedAt) VALUES (?,?,?,?)`;
+    const oldValues = [newId(), projectId, uri, Date.now()];
+    const values = [newId(), projectId, uri, Date.now(), uri];
+    console.log(query, values)
+    db.runSync(query, values);
+    // db.runSync(oldQuery, oldValues);
+    // db.runSync(
+    //     `INSERT INTO project_images (id, projectId, uri, updatedAt, imageAnswers) VALUES (?,?,?,?,?)`, [newId(), projectId, uri, Date.now(), uri]
+    // );
 }
 
 export function deleteImage(projectId: string, uri: string) {
     db.runSync(`DELETE FROM project_images WHERE projectId=? AND uri=?`, [projectId, uri]);
 }
 
-// export function labelImage(projectId: string, imageId:string, labels: string[]) {
-//     labels.forEach((label, i) => {
-//         const query_update = `UPDATE project_images SET labels=? WHERE imageId=?`;
-//         const params = [labels[i], imageId];
-//         db.runSync(query_update, params) // This is all super fucked and wont work if I try to label like this, need to revise
-//     })
-// }
+export function storeImageAnswers(projectId: string, uri:string, imageAnswers:string) {
+    const query = `UPDATE project_images SET imageAnswers=? WHERE projectId=? AND uri=?`
+    const insertedData = [imageAnswers, projectId, uri]
+    // console.log(query, insertedData)
+    db.runSync(query, insertedData)
+}
+export function checkImageAnswers(projectId: string, uri:string) {
+    const query = `SELECT imageAnswers FROM project_images WHERE projectId=? AND uri=?`
+    const data = [projectId, uri]
+    const answerString = db.getAllSync<any>(query, data)
+    // console.log("ANSWERS TO THIS IMAGE:", answerString)
+    return answerString
+}

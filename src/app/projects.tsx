@@ -201,7 +201,6 @@ import { MaterialIcons } from '@react-native-vector-icons/material-icons';
 // projects are stored in items and grabbed from listProjects() 
 export default function Projects() {
     const [items, setItems] = useState<any[]>([]);
-
     const refresh = useCallback(() => setItems(listProjects()), []); 
     useFocusEffect(useCallback(() => { refresh(); }, [refresh])); // called any time this screen comes back into scope
 
@@ -226,7 +225,7 @@ export default function Projects() {
                         {p.cover ? (
                         <Image source={{ uri: p.cover }} style={{ width: "100%", height: 180, marginTop: 8, borderRadius: 8 }} />
                         ) : null}
-                        <Text numberOfLines={2} style={{ marginTop: 6 }}>{p.description}</Text>
+                        <Text numberOfLines={3} style={{ marginTop: 6 }}>{p.description}</Text>
                     </View>
                 </TouchableOpacity>
                 {/* <View></View> */}

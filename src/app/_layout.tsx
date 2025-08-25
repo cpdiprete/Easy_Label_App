@@ -22,7 +22,7 @@ import { initDb } from "../lib/db";
 
 
 export default function RootLayout() {
-  useEffect(() => { initDb(); }, []); // intialize projects db on this phone/app if it hasnt been done yet
+  // useEffect(() => { initDb(); }, []); // intialize projects db on this phone/app if it hasnt been done yet
   return (
     <Stack>
       <Stack.Screen name="projects" options={{ title: "Projects" }} />

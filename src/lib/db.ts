@@ -46,9 +46,24 @@ export function initDb() {
             id TEXT PRIMARY KEY,
             projectId TEXT NOT NULL,
             uri TEXT NOT NULL,         -- file://… (local) or http(s)://… later
-            updatedAt INTEGER NOT NULL
+            updatedAt INTEGER NOT NULL,
+            imageAnswers TEXT NOT NULL
         );
     `);
+}
+export function clearDbData() {
+    console.log("clearing all stored data from database (keeping schema)")
+    db.execAsync(`DELETE FROM project_images`)
+    db.execAsync(`DELETE FROM prompt_options`)
+    db.execAsync(`DELETE FROM prompts`)
+    db.execAsync(`DELETE FROM projects`)
+}
+export function clearDbSchema() {
+    console.log("clearing the whole database (schema and all)")
+    db.execAsync(`DROP TABLE IF EXISTS project_images`)
+    db.execAsync(`DROP TABLE IF EXISTS prompt_options`)
+    db.execAsync(`DROP TABLE IF EXISTS prompts`)
+    db.execAsync(`DROP TABLE IF EXISTS projects`)
 }
 
 // Simple id helper (good enough for local MVP)
