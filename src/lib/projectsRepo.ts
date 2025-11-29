@@ -1,5 +1,6 @@
 // lib/projectsRepo.ts
-import { db, newId } from "./db";
+// import { db, newId } from "./db";
+import { db, newId } from "./mvp_db";
 
 export type Prompt = { id: string; question: string; options: { id: string; text: string }[]; orderIndex: number };
 export type Project = {
@@ -11,10 +12,9 @@ export type Project = {
     description?: string;
     images: string[]; // URIs (file://…)
     prompts: Prompt[];
-    createdAt: number;
+    // createdAt: number;
     updatedAt: number;
 };
-
 // CREATE
 export function createProject(p: {
     title: string;
@@ -25,75 +25,103 @@ export function createProject(p: {
     prompts?: { question: string; options: string[] }[];
     imageUris?: string[];
 }): string {
+    console.log("beggining of create project database funnction")
     const id = newId();
     const now = Date.now();
-
+    console.log("date added")
     db.execSync("BEGIN");
+    console.log("db.execSync called")
     db.runSync(
-        `INSERT INTO projects (id,title,admin,organization,protocolpdf,description,createdAt,updatedAt)
-        VALUES (?,?,?,?,?,?,?,?)`, [id, p.title, p.admin, p.organization, p.protocolpdf ?? null, p.description ?? null, now, now]
+        `INSERT INTO PROJECTS_USER (title,admin_contact,organization,protocol_pdf,description,last_updated,labeled_count)
+        VALUES (?,?,?,?,?,?,?)`, [p.title, p.admin, p.organization, p.protocolpdf ?? null, p.description ?? null, now, 0]
     );
-
+    const row = db.getFirstSync<{ id: number }>(
+        "SELECT last_insert_rowid() AS id"
+    );
+    if (!row) {
+        throw new Error("Could not retrieve last inserted project ID");
+    }
     (p.prompts ?? []).forEach((pr, i) => {
-        const pid = newId();
+
+        const projectId = row.id;
         db.runSync(
-            `INSERT INTO prompts (id, projectId, question, orderIndex, updatedAt)
-            VALUES (?,?,?,?,?)`, [pid, id, pr.question, i, now]
+            `INSERT INTO PROMPTS (project_id)
+            VALUES (?)`, [projectId]
         );
+        const last_row = db.getFirstSync<{ id: number }>(
+            "SELECT last_insert_rowid() AS id"
+        );
+        if (!last_row) {
+            throw new Error("Could not retrieve last inserted project ID");
+        }
+        const prompt_id = last_row.id;
         pr.options.forEach((opt, j) => {
             db.runSync(
-                `INSERT INTO prompt_options (id, promptId, text, orderIndex, updatedAt)
-                VALUES (?,?,?,?,?)`, [newId(), pid, opt, j, now]
+                `INSERT INTO PROMPT_OPTION (prompt_id, option_text, order_index)
+                VALUES (?,?,?)`, [prompt_id, opt, j]
             );
         });
     });
 
-    (p.imageUris ?? []).forEach((uri) => {
-        db.runSync(
-            `INSERT INTO project_images (id, projectId, uri, updatedAt)
-            VALUES (?,?,?,?)`, [newId(), id, uri, now]
-        );
-    });
+    
+    // (p.imageUris ?? []).forEach((uri) => {
+    //     db.runSync(
+    //         `INSERT INTO project_images (id, projectId, uri, updatedAt)
+    //         VALUES (?,?,?,?)`, [newId(), id, uri, now]
+    //     );
+    // });
+    // (p.imageUris ?? []).forEach((uri) => {
+    //     db.runSync(
+    //         `INSERT INTO IMAGES (project_id, file_path, order_index)
+    //         VALUES (?,?,?,?)`, [projectId, uri, now]
+    //     );
+    // });
 
     db.execSync("COMMIT");
+    console.log("db.execSync commited and finsihed")
     return id;
 }
 
 export function deleteProject(id: string): boolean {
     db.execSync("BEGIN");
-    db.runSync(`DELETE FROM projects WHERE id=?`, [id]);
-    db.runSync(`DELETE FROM prompts WHERE projectId=?`, [id]);
+    db.runSync(`DELETE FROM PROJECTS_USER WHERE id=?`, [id]);
+    db.runSync(`DELETE FROM PROMPTS WHERE project_id=?`, [id]);
     // db.runSync(`DELETE FROM prompt_options WHERE projectId=?`, [id])
-    db.runSync(`DELETE FROM project_images WHERE projectId=?`, [id])
+    db.runSync(`DELETE FROM IMAGES WHERE project_idd=?`, [id])
     db.execSync("COMMIT");
     return true
 }
 
 
 // READ (list)
-export function listProjects(): Array<Pick<Project, "id" | "title" | "organization" | "admin" | "description"> & { cover?: string }> { // I need some indicator of how many have been labeled
+export function listProjects(): Array<Pick<Project, "id" | "title" | "organization" | "admin" | "description"> & { cover?: string }> 
+    { // I need some indicator of how many have been labeled
 
 
-    const rows = db.getAllSync<any>(`SELECT id,title,organization,admin,description FROM projects ORDER BY updatedAt DESC`);
+    // const rows = db.getAllSync<any>(`SELECT id,title,organization,admin_contact,description FROM PROJECTS_USER ORDER BY last_updated DESC`);
+    const rows = db.getAllSync<any>(`SELECT id,title,organization,admin_contact,description FROM PROJECTS_USER ORDER BY id DESC`);
     // attach a cover image (first image if exists)
+    console.log("calling List Projects, here are the returned rows!!!!!")
+    console.log(rows)
     return rows.map((r) => {
-        const img = db.getFirstSync<any>(`SELECT uri FROM project_images WHERE projectId=? ORDER BY rowid ASC LIMIT 1`, [r.id]);
+        const img = db.getFirstSync<any>(`SELECT file_path FROM IMAGES WHERE project_id=? ORDER BY rowid ASC LIMIT 1`, [r.id]);
         return { ...r, cover: img?.uri }; // currently the cover image is pulled from the first image
     });
 }
 
 // READ (one, with prompts+options+images)
 export function getProject(id: string): Project | null {
-    const p = db.getFirstSync<any>(`SELECT * FROM projects WHERE id=?`, [id]); // select project with matching id
+    const p = db.getFirstSync<any>(`SELECT * FROM PROJECTS_USER WHERE id=?`, [id]); // select project with matching id
     if (!p) {
+        console.log("-- getProject failed with id = ", id);
         return null;
     } 
     const promptRows = db.getAllSync<any>(
-        `SELECT * FROM prompts WHERE projectId=? ORDER BY orderIndex ASC`, [id] // selct prompts from the projectID
+        `SELECT * FROM PROMPTS WHERE project_id=? ORDER BY id ASC`, [id] // selct prompts from the projectID
     );
     const prompts: Prompt[] = promptRows.map((pr: any) => {
         const opts = db.getAllSync<any>(
-            `SELECT * FROM prompt_options WHERE promptId=? ORDER BY orderIndex ASC`, [pr.id]
+            `SELECT * FROM PROMPT_OPTION WHERE prompt_id=? ORDER BY id ASC`, [pr.id]
         ).map((o: any) => ({ id: o.id, text: o.text }));
         return { id: pr.id, question: pr.question, options: opts, orderIndex: pr.orderIndex };
     });
@@ -104,8 +132,10 @@ export function getProject(id: string): Project | null {
     // )
     // console.log("Images from getProject in projectsRepo.ts: ", imgs)
 
-    const imageRows = db.getAllSync<any>(`SELECT uri FROM project_images WHERE projectId=? ORDER BY rowid ASC`, [id]);
+    const imageRows = db.getAllSync<any>(`SELECT file_path FROM IMAGES WHERE project_id=? ORDER BY rowid ASC`, [id]);
     const images = imageRows.map((r: any) => r.uri);
+    // const labeled_count = db.getAllSync<any>(`SELECT labeled_count FROM project WHERE projectId=? ORDER BY rowid ASC`, [id]);
+    const labeled_count = db.getAllSync<any>(`SELECT labeled_count FROM PROJECTS_USER WHERE id=? ORDER BY rowid ASC`, [id]);
     // console.log("Images from getProject in projectsRepo.ts: ", images)
 
     return {
@@ -117,7 +147,7 @@ export function getProject(id: string): Project | null {
         description: p.description ?? undefined,
         images,
         prompts,
-        createdAt: p.createdAt,
+        // createdAt: p.createdAt,
         updatedAt: p.updatedAt,
     };
 }
@@ -139,8 +169,8 @@ export function updateProject(id: string, changes: Partial<Pick<Project, "title"
 // MUTATIONS (prompts/images)
 export function addPrompt(projectId: string, question: string, options: string[]) {
     const now = Date.now();
-    const nextIndex = (db.getFirstSync<any>(`SELECT IFNULL(MAX(orderIndex),-1) + 1 AS idx FROM prompts WHERE projectId=?`, [projectId])?.idx) ?? 0;
-    const promptId = newId();
+    const nextIndex = (db.getFirstSync<any>(`SELECT IFNULL(MAX(orderIndex),-1) + 1 AS idx FROM PROMPTS WHERE projectId=?`, [projectId])?.idx) ?? 0;
+    // const promptId = newId();
     db.execSync("BEGIN");
     db.runSync(
         `INSERT INTO prompts (id, projectId, question, orderIndex, updatedAt) VALUES (?,?,?,?,?)`,

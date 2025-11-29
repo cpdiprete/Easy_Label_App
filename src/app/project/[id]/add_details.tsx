@@ -4,20 +4,28 @@ import { useCallback, useState } from "react";
 import { View, Text, TextInput, Button, ScrollView, Image, TouchableOpacity, StyleSheet, Modal, Pressable } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { getProject, updateProject, addPrompt, addImage, deleteImage } from "../../../lib/projectsRepo";
-
+// import { getProject, updateProject, addPrompt, addImage, deleteImage } from "../../../lib/projectsRepo";
+// import { getProject, updateProject, addPrompt, addImage, deleteImage, getPromptOptions, getPromptAnswerChoices } from "../../../lib/mvp_projectsRepo";
+import { getProject, updateProject, addPrompt, addImage ,deleteImage, getPromptOptions, getPromptAnswerChoices } from "../../../lib/mvp_projectsRepo";
 
 export default function ProjectDetail() {
-const [promptText, setPromptText] = useState("");
-const [showAddPromptUI, setShowAddPromptUI] = useState(false);
-const [questionText, setQuestionText] = useState("");
-const [answers, setAnswers] = useState<string[]>([""]);
-const { id } = useLocalSearchParams<{ id: string }>();
-const [project, setProject] = useState<any>(null);
-const [title, setTitle] = useState("");
-const [org, setOrg] = useState("");
-const [admin, setAdmin] = useState("");
-const [desc, setDesc] = useState("");
+    const [promptText, setPromptText] = useState("");
+    const [showAddPromptUI, setShowAddPromptUI] = useState(false);
+    const [questionText, setQuestionText] = useState("");
+    const [answers, setAnswers] = useState<string[]>([""]);
+    const { id } = useLocalSearchParams<{ id: string }>();
+    const project_id = Number(id);
+    const [project, setProject] = useState<any>(null);
+    const [title, setTitle] = useState("");
+    const [labeledCount, setLabeledCount] = useState(2);
+    const [userInputOrg, setUserInputOrg] = useState("");
+
+// User inputted project attribures
+    const [userInputAdminContact, setUserInputAdminContact] = useState("");
+    const [userInputDesc, setUserInputDesc] = useState("");
+    const [displayPrompts, setDisplayPrompts] = useState<any>("")
+    const [promptOptionsMap, setPromptOptionsMap] = useState<any>(new Map())
+    const [displayImages, setDisplayImages] = useState("")
 
     const addAnswer = () => setAnswers(prev => [...prev, ""]);
     const updateAnswer = (i: number, text: string) =>
@@ -43,7 +51,6 @@ const [desc, setDesc] = useState("");
         }
     };
 
-
     const onAddPrompt = () => {
         setShowAddPromptUI(true);
         // const [showAddPromptUI, setShowAddPromptUI] = useState(false);
@@ -66,18 +73,28 @@ const [desc, setDesc] = useState("");
     };
 
     const refresh = useCallback(() => {
-        if (!id) {
+        if (!project_id) {
+            console.log("Id not found in add_details")
             return
         }
-        const p = getProject(id);
+        const p = getProject(project_id);
         setProject(p);
+        const project_prompts = getPromptOptions(project_id)
+        setDisplayPrompts(project_prompts)
+        const newMap = new Map()
+        project_prompts.forEach(prompt => {
+            newMap.set(prompt.id, getPromptAnswerChoices(prompt.id))
+        });
+        setPromptOptionsMap(newMap)
         console.log("set project")
-        // console.log(project, p)
         if (p) { 
             setTitle(p.title)
-            setOrg(p.organization)
-            setAdmin(p.admin)
-            setDesc(p.description ?? "")
+            setUserInputOrg(p.organization)
+            setUserInputAdminContact(p.admin_contact)
+            setUserInputDesc(p.description ?? "")
+        }
+        else {
+            console.log("project not gotten.. in add_details refresh() func")
         }
     }, [id]);
 
@@ -90,17 +107,23 @@ const [desc, setDesc] = useState("");
     }
 
     const saveBasics = () => {
-        updateProject(project.id, { title, organization: org, admin, description: desc });
+        updateProject(project.id, { title, organization: userInputOrg, admin_contact:userInputAdminContact, description: userInputDesc});
         refresh();
     };
 
 
     const onAddImage = async () => {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (!perm.granted) return;
+        if (!perm.granted) {
+            console.log("add_details.onAddImage() Not allowed to pick image")
+            return;
+        }
 
         const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 1 });
-        if (res.canceled || !res.assets?.length) return;
+        if (res.canceled || !res.assets?.length) {
+            console.log("add_details.onAddImage() some shit went wrong")
+            return;
+        }
 
         const src = res.assets[0].uri;                           // e.g., file:///… or ph://…
         const filename = src.split("/").pop() || `img-${Date.now()}.jpg`;
@@ -111,7 +134,9 @@ const [desc, setDesc] = useState("");
         // Copy into app sandbox for stability
         await FileSystem.copyAsync({ from: src, to: dest });
 
-        addImage(project.id, dest);
+        // addImage(project.id, dest);
+        addImage(project_id, dest);
+        console.log("add_details.onAddImage().. added image")
         refresh();
     };
 
@@ -156,11 +181,11 @@ const [desc, setDesc] = useState("");
                 <Text>Title</Text>
                 <TextInput value={title} onChangeText={setTitle} style={{ borderWidth: 1, padding: 8, borderRadius: 8 }} />
                 <Text>Organization</Text>
-                <TextInput value={org} onChangeText={setOrg} style={{ borderWidth: 1, padding: 8, borderRadius: 8 }} />
+                <TextInput value={userInputOrg} onChangeText={setUserInputOrg} style={{ borderWidth: 1, padding: 8, borderRadius: 8 }} />
                 <Text>Admin</Text>
-                <TextInput value={admin} onChangeText={setAdmin} style={{ borderWidth: 1, padding: 8, borderRadius: 8 }} />
+                <TextInput value={userInputAdminContact} onChangeText={setUserInputAdminContact} style={{ borderWidth: 1, padding: 8, borderRadius: 8 }} />
                 <Text>Description</Text>
-                <TextInput value={desc} onChangeText={setDesc} multiline style={{ borderWidth: 1, padding: 8, borderRadius: 8, minHeight: 80 }} />
+                <TextInput value={userInputDesc} onChangeText={setUserInputDesc} multiline style={{ borderWidth: 1, padding: 8, borderRadius: 8, minHeight: 80 }} />
                 <Button title="Save Basics" onPress={saveBasics} />
 
                 <View style={{backgroundColor: "#000", marginVertical: 12 }} />
@@ -177,11 +202,15 @@ const [desc, setDesc] = useState("");
                     <Text style={{ fontWeight: "bold", color:"000" }}>Prompts</Text>
                     <Button title="Add Prompt" onPress={onAddPrompt} />
                 </View>
-
-                {project.prompts.map((p: any) => (
-                    <View key={p.id} style={{ marginTop: 8, padding: 8, backgroundColor: "#f7f7f7", borderRadius: 8 }}>
-                    <Text style={{ fontWeight: "600" }}>{p.question}</Text>
-                    <Text>Options: {p.options.map((o: any) => o.text).join(", ")}</Text>
+                {displayPrompts.map((prompt: any) => (
+                    <View key={prompt.id} style={{ marginTop: 8, padding: 8, backgroundColor: "#f7f7f7", borderRadius: 8 }}>
+                        <Text style={{ fontWeight: "600" }}>{prompt.question_text}</Text>
+                        <Text> Options: {
+                            (promptOptionsMap.get(prompt.id) ?? [])
+                            .map((o: any) => o.option_text)
+                            .join(", ")
+                        }
+                        </Text>
                     </View>
                 ))}
             </ScrollView>

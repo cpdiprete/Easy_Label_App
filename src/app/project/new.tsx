@@ -4,7 +4,8 @@ import { View, Text, TextInput, Button, ScrollView, Modal } from "react-native";
 import { WebView } from "react-native-webview";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
-import { createProject } from "../../lib/projectsRepo";
+// import { createProject } from "../../lib/projectsRepo";
+import { createProject, addPrompt } from "../../lib/mvp_projectsRepo";
 
 export default function NewProject() {
     const [title, setTitle] = useState("");
@@ -16,12 +17,13 @@ export default function NewProject() {
     const [pdfUri, setPdfUri] = useState<string | null>(null);
     const [pdfName, setPdfName] = useState<string | null>(null);
     const [previewOpen, setPreviewOpen] = useState(false);
+    const [defaultPrompts, setDefaultPrompts] = useState(null)
 
-    // simple defaults
-    const defaultPrompts = [
-        { question: "What is the technical adequacy of the image?", options: ["Adequate", "Artifact", "Unreadable"] },
-        { question: "What type of tubule is this?", options: ["Proximal", "Distal", "Other"] },
-    ];
+    // // simple defaults to see
+    // const defaultPrompts = [
+    //     { question: "What is the technical adequacy of the image?", options: ["Adequate", "Artifact", "Unreadable"] },
+    //     { question: "What type of tubule is this?", options: ["Proximal", "Distal", "Other"] },
+    // ];
 
     const pickPdf = async () => {
         const res = await DocumentPicker.getDocumentAsync({
@@ -69,14 +71,23 @@ export default function NewProject() {
         <Button
             title="Create Project"
             onPress={() => {
-                const id = createProject({
+                const id: number = createProject({ // DB FUNCTION CALL: /lib/projectsRepo
                     title: title.trim() || "Untitled",
-                    admin: admin.trim() || "unknown",
+                    admin_contact: admin.trim() || "unknown",
                     organization: org.trim() || "unknown",
                     description: desc.trim(),
-                    prompts: defaultPrompts,
+                    // prompts: defaultPrompts,
                     imageUris: [], // add images later in the detail screen
                 });
+                if (defaultPrompts) {
+                    defaultPrompts.map((dict) => {
+                        addPrompt(
+                            id,  // project_id
+                            dict.question, // question
+                            dict.options // potential options
+                        )
+                    })
+                }
                 router.replace({ pathname: "/project/[id]/add_details", params: { id } });
             }}
         />

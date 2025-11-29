@@ -2,7 +2,8 @@
 
 import { Text, View, Button } from "react-native";
 import {Link, useRouter} from "expo-router";
-import { clearDbData, clearDbSchema, initDb } from "../lib/db";
+// import { clearDbData, clearDbSchema, initDb } from "../lib/db";
+import { clearDbData, clearDbSchema, initDb } from "../lib/mvp_db";
 
 export default function Index() {
   const router = useRouter();

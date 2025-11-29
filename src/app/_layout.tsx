@@ -18,7 +18,8 @@
 // app/_layout.tsx
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { initDb } from "../lib/db";
+// import { initDb } from "../lib/db";
+import { initDb } from "../lib/mvp_db";
 
 
 export default function RootLayout() {

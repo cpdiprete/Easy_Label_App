@@ -6,9 +6,11 @@ export const db = SQLite.openDatabaseSync("projects_mvp.db");
 // One-time init
 export function initDb() {
     console.log("intializing db")
+    db.execSync("BEGIN");
     db.execSync("PRAGMA journal_mode = WAL;");
     db.execSync('PRAGMA foreign_keys = ON');
 
+    // CALVIN MVP DATABASE SCHEMA -------------------
     db.execSync(`
         CREATE TABLE IF NOT EXISTS PROJECTS_USER (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,47 +24,56 @@ export function initDb() {
             images TEXT,
             last_updated TEXT,
             labeled_count INTEGER NOT NULL,
-            total_prompt_count INTEGER NOT NULL
+            total_prompt_count INTEGER
         );
+    `);
+    db.execSync(`
+        CREATE TABLE IF NOT EXISTS PROMPTS (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            question_text TEXT,
+            FOREIGN KEY (project_id) REFERENCES PROJECTS_USER(id)
+        )
+    `);
+    // answer options
+    db.execSync(`
+        CREATE TABLE IF NOT EXISTS PROMPT_OPTION (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            prompt_id INTEGER,
+            option_text TEXT,
+            order_index INTEGER,
+            FOREIGN KEY (prompt_id) REFERENCES PROMPTS(id)
+        )
     `);
 
     db.execSync(`
-        CREATE TABLE IF NOT EXISTS prompts (
-            id TEXT PRIMARY KEY,
-            projectId TEXT NOT NULL,
-            question TEXT NOT NULL,
-            orderIndex INTEGER NOT NULL,
-            updatedAt INTEGER NOT NULL
-        );
+        CREATE TABLE IF NOT EXISTS IMAGES (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            file_path TEXT NOT NULL,
+            order_index INTEGER,
+            FOREIGN KEY (project_id) REFERENCES PROJECTS_USER(id)
+        )
     `);
 
     db.execSync(`
-        CREATE TABLE IF NOT EXISTS prompt_options (
-            id TEXT PRIMARY KEY,
-            promptId TEXT NOT NULL,
-            text TEXT NOT NULL,
-            orderIndex INTEGER NOT NULL,
-            updatedAt INTEGER NOT NULL
-        );
+        CREATE TABLE IF NOT EXISTS LABEL_RESPONSES (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            image_id INTEGER,
+            selected_answer INTEGER,
+            FOREIGN KEY (selected_answer) REFERENCES PROMPT_OPTION(id),
+            FOREIGN KEY (image_id) REFERENCES IMAGES(id),
+            FOREIGN KEY (project_id) REFERENCES PROJECTS_USER(id)
+        )
     `);
 
-    db.execSync(`
-        CREATE TABLE IF NOT EXISTS project_images (
-            id TEXT PRIMARY KEY,
-            projectId TEXT NOT NULL,
-            uri TEXT NOT NULL,         -- file://… (local) or http(s)://… later
-            updatedAt INTEGER NOT NULL,
-            imageAnswers TEXT NOT NULL
-        );
-    `);
     console.log("Database successfully initialized!!!")
+    db.execSync("COMMIT");
+    // db.execSync('COMMIT');
 }
 export function clearDbData() {
     console.log("clearing all stored data from database (keeping schema)")
-    // db.execAsync(`DELETE FROM project_images`)
-    // db.execAsync(`DELETE FROM prompt_options`)
-    // db.execAsync(`DELETE FROM prompts`)
-    // db.execAsync(`DELETE FROM projects`)
     const tables = db.getAllSync<{ name: string }>(
         `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';`
     );
@@ -73,11 +84,7 @@ export function clearDbData() {
 
 }
 export function clearDbSchema() {
-    // console.log("clearing the whole database (schema and all)")
-    // db.execAsync(`DROP TABLE IF EXISTS project_images`)
-    // db.execAsync(`DROP TABLE IF EXISTS prompt_options`)
-    // db.execAsync(`DROP TABLE IF EXISTS prompts`)
-    // db.execAsync(`DROP TABLE IF EXISTS projects`)
+    console.log("clearing the whole database (schema and all)")
     console.log("Clearing all tables...");
 
     const tables = db.getAllSync<{ name: string }>(
