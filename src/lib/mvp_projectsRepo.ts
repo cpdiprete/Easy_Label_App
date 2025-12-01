@@ -63,20 +63,6 @@ export function createProject(p: {
         });
     });
 
-    
-    // (p.imageUris ?? []).forEach((uri) => {
-    //     db.runSync(
-    //         `INSERT INTO project_images (id, projectId, uri, updatedAt)
-    //         VALUES (?,?,?,?)`, [newId(), id, uri, now]
-    //     );
-    // });
-    // (p.imageUris ?? []).forEach((uri) => {
-    //     db.runSync(
-    //         `INSERT INTO IMAGES (project_id, file_path, order_index)
-    //         VALUES (?,?,?,?)`, [projectId, uri, now]
-    //     );
-    // });
-
     db.execSync("COMMIT");
     console.log("db.execSync commited and finsihed")
     return inserted_project_id;
@@ -139,7 +125,7 @@ export function getProject(id: number): Project | null {
     const promptRows = db.getAllSync<any>(
         `SELECT * FROM PROMPTS WHERE project_id=? ORDER BY id ASC`, [id] // selct prompts from the projectID
     );
-    console.log("Retrieving matching prompts from getProjec(). Prompt rows =", promptRows)
+    // console.log("Retrieving matching prompts from getProjec(). Prompt rows =", promptRows)
     // const promptOptionRows = db.getAllSync<any>(
     //     `SELECT * FROM PROMPT_OPTION WHERE prompt_id=? ORDER BY id ASC`, [promptRows] 
     // );
@@ -147,14 +133,14 @@ export function getProject(id: number): Project | null {
         const opts = db.getAllSync<any>(
             `SELECT * FROM PROMPT_OPTION WHERE prompt_id=? ORDER BY id ASC`, [pr.id]
         ).map((o: any) => ({ id: o.id, text: o.text }));
-        console.log("PROMPT CHOICE OUTPUT from getProject(). options=", opts)
+        // console.log("PROMPT CHOICE OUTPUT from getProject(). options=", opts)
         return { id: pr.id, question: pr.question, options: opts, orderIndex: pr.orderIndex };
     });
 
 
     const imageRows = db.getAllSync<any>(`SELECT file_path FROM IMAGES WHERE project_id=? ORDER BY id ASC`, [id]);
     const images = imageRows.map((r: any) => r.file_path);
-    console.log("mvp_projectsRepo.getProject().. retrieved image list for project:",  imageRows)
+    // console.log("mvp_projectsRepo.getProject().. retrieved image list for project:",  imageRows)
     // const labeled_count = db.getAllSync<any>(`SELECT labeled_count FROM project WHERE projectId=? ORDER BY rowid ASC`, [id]);
     const labeled_count = db.getAllSync<any>(`SELECT labeled_count FROM PROJECTS_USER WHERE id=? ORDER BY rowid ASC`, [id]);
     // console.log("Images from getProject in projectsRepo.ts: ", images)
@@ -210,11 +196,6 @@ export function addPrompt(project_id: number, question: string, options: string[
     });
     db.execSync("COMMIT");
 }
-export function getImages(project_id:number) {
-    const imageRows = db.getAllSync<any>(`SELECT file_path FROM IMAGES WHERE project_id=? ORDER BY id ASC`, [project_id]);
-    const images = imageRows.map((r: any) => r.file_path);
-    console.log("mvp_projectsRepo.getProject().. retrieved image list for project:",  imageRows)
-}
 
 // export function addImage(projectId: string, uri: string) {
 export function addImage(projectId: number, uri: string) {
@@ -222,16 +203,6 @@ export function addImage(projectId: number, uri: string) {
     console.log("Trying to insert an image in mvp_projectsRepo.addImage()... projectID, uri = ", projectId, uri)
     db.runSync(`INSERT INTO IMAGES (project_id, file_path) VALUES (?,?)`, [projectId, uri])
     db.execSync("COMMIT");
-    // const query = `INSERT INTO project_images (id, projectId, uri, updatedAt, imageAnswers) VALUES (?,?,?,?,?)`;
-    // const oldQuery = `INSERT INTO project_images (id, projectId, uri, updatedAt) VALUES (?,?,?,?)`;
-    // const oldValues = [newId(), projectId, uri, Date.now()];
-    // const values = [newId(), projectId, uri, Date.now(), uri];
-    // console.log(query, values)
-    // db.runSync(query, values);
-    // db.runSync(oldQuery, oldValues);
-    // db.runSync(
-    //     `INSERT INTO project_images (id, projectId, uri, updatedAt, imageAnswers) VALUES (?,?,?,?,?)`, [newId(), projectId, uri, Date.now(), uri]
-    // );
 }
 
 export function deleteImage(projectId: string, uri: string) {
@@ -351,3 +322,4 @@ export function getCoverImageForProject(project_id: number) {
         `SELECT id, file_path FROM IMAGES WHERE project_id=? ORDER BY order_index ASC`, [project_id]
     );
 }
+// export function getAllLabelResponsesForProject()

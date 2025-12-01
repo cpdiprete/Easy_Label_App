@@ -378,7 +378,6 @@ import {
     getPromptsWithOptions,
     getImagesForProject,
     saveLabelResponses,
-    getImages,
     getFirstUnlabeledImage,
 
 } from "../../../lib/mvp_projectsRepo";

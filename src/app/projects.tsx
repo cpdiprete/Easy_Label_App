@@ -4,8 +4,55 @@ import { useCallback, useState } from "react";
 import { View, Text, Button, Image, ScrollView, TouchableOpacity } from "react-native";
 import { StyleSheet } from "react-native";
 // import { listProjects, getProject, deleteProject, updateProject, addPrompt, addImage, deleteImage } from "../lib/projectsRepo";
-import { listProjects, getProject, deleteProject, updateProject, addPrompt, addImage, deleteImage, getImages, getCoverImageForProject } from "../lib/mvp_projectsRepo";
+import { listProjects, getProject, deleteProject, updateProject, addPrompt, addImage, deleteImage, getCoverImageForProject } from "../lib/mvp_projectsRepo";
 import { MaterialIcons } from '@react-native-vector-icons/material-icons';
+
+
+async function exportProjectToServer(projectId: number) {
+    const project = getProject(projectId);  // this already returns JS object
+
+    if (!project) {
+        console.log("Project not found");
+        return;
+    }
+
+    // // Convert to JSON-friendly object
+    // const payload = {
+    //     id: project.id,
+    //     title: project.title,
+    //     admin: project.admin_contact,
+    //     organization: project.organization,
+    //     prompts: project.prompts,
+    //     images: project.images,
+    // };
+    const payload = {
+        id: project.id,
+        title: project.title,
+        // admin: project.admin_contact,
+        // organization: project.organization,
+        // prompts: project.prompts,
+        // images: project.images,
+    };
+    labels = getLa
+
+    console.log("Sending JSON payload:", payload);
+
+    try {
+        console.log("------- fetching upload project")
+        // const response = await fetch("http://localhost:5000/upload_project", http://127.0.0.1:5000
+        const response = await fetch("http://127.0.0.1:5000/upload_project", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        });
+        console.log("------- made fetch object")
+
+        const result = await response.json();
+        console.log("Server responded:", result);
+    } catch (err) {
+        console.error("Error sending data:", err);
+    }
+}
 
 // projects are stored in items and grabbed from listProjects() 
 export default function Projects() {
@@ -24,10 +71,12 @@ export default function Projects() {
         {projectsList.map((proj) => (
             
             <View key={proj.id} style={styles.project}>
-                    {/* <Image
-                        source={{ uri: projectsList[0].uri }}
-                        // style={styles.image}
-                    /> */}
+            <TouchableOpacity
+                style={{ padding: 12, backgroundColor: "darkblue", borderRadius: 6 }}
+                onPress={() => exportProjectToServer(proj.id)}
+            >
+            <Text style={{ color: "white" }}>Export to Flask Server</Text>
+            </TouchableOpacity>
                 <TouchableOpacity onPress={() => 
                     {
                         // console.log("going to id", p.id, "from project: ", p)
